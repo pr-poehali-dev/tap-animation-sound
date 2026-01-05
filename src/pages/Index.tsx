@@ -24,6 +24,9 @@ const Index = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [multiplier, setMultiplier] = useState(1);
+  const [autoClicker, setAutoClicker] = useState(0);
+  const [showShop, setShowShop] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const particleIdRef = useRef(0);
   const bonusIdRef = useRef(0);
@@ -115,7 +118,8 @@ const Index = () => {
   };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const newClicks = clicks + 1;
+    const clickValue = multiplier + autoClicker;
+    const newClicks = clicks + clickValue;
     setClicks(newClicks);
     setIsAnimating(true);
     
@@ -142,8 +146,126 @@ const Index = () => {
     }
   };
 
+  const buyMultiplier = () => {
+    if (clicks >= 500) {
+      setClicks(prev => prev - 500);
+      setMultiplier(prev => prev * 2);
+      toast.success('Куплен умножитель! Теперь каждый клик даёт x' + (multiplier * 2) + ' тапов', {
+        duration: 3000,
+      });
+      playBonusSound();
+    } else {
+      toast.error('Недостаточно тапов! Нужно: 500');
+    }
+  };
+
+  const buyAutoClicker = () => {
+    if (clicks >= 1500) {
+      setClicks(prev => prev - 1500);
+      setAutoClicker(50);
+      toast.success('Куплен уничтожитель тапов! +50 тапов за клик! 💥', {
+        duration: 3000,
+      });
+      playBonusSound();
+    } else {
+      toast.error('Недостаточно тапов! Нужно: 1500');
+    }
+  };
+
   return (
     <div className="min-h-screen game-gradient flex items-center justify-center p-4 overflow-hidden">
+      <div className="absolute top-6 left-6 z-20">
+        <h2 className="text-4xl md:text-5xl font-black text-white drop-shadow-2xl tracking-tight">
+          AWtest
+        </h2>
+      </div>
+
+      <button
+        onClick={() => setShowShop(!showShop)}
+        className="fixed top-6 right-6 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-md border-2 border-white/40 rounded-2xl px-6 py-3 transition-all hover:scale-105 active:scale-95"
+      >
+        <div className="flex items-center gap-2">
+          <Icon name="ShoppingBag" size={24} className="text-white" />
+          <span className="text-white font-bold text-lg">МАГАЗИН</span>
+        </div>
+      </button>
+
+      {showShop && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 flex items-center justify-center p-4" onClick={() => setShowShop(false)}>
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl p-6 md:p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black text-white flex items-center gap-2">
+                  <Icon name="Store" size={32} />
+                  Магазин
+                </h2>
+                <button onClick={() => setShowShop(false)} className="text-white/70 hover:text-white transition-colors">
+                  <Icon name="X" size={28} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/20">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Icon name="Zap" size={24} className="text-accent" />
+                        Умножитель тапов
+                      </h3>
+                      <p className="text-white/70 text-sm mt-1">
+                        Удваивает силу каждого клика
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/90 font-semibold">Текущий: x{multiplier}</span>
+                    <Button
+                      onClick={buyMultiplier}
+                      disabled={clicks < 500}
+                      className="bg-accent hover:bg-accent/90 text-white font-bold"
+                    >
+                      500 тапов
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-4 border border-white/20">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Icon name="Rocket" size={24} className="text-secondary" />
+                        Уничтожитель тапов
+                      </h3>
+                      <p className="text-white/70 text-sm mt-1">
+                        +50 тапов за каждый клик!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/90 font-semibold">
+                      {autoClicker > 0 ? '✅ Куплено' : 'Не куплено'}
+                    </span>
+                    <Button
+                      onClick={buyAutoClicker}
+                      disabled={clicks < 1500 || autoClicker > 0}
+                      className="bg-secondary hover:bg-secondary/90 text-white font-bold"
+                    >
+                      1500 тапов
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                <p className="text-white/80 text-center font-medium">
+                  💰 Твои тапы: <span className="text-white font-bold text-xl">{clicks.toLocaleString()}</span>
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
       
       <div className="relative z-10 max-w-2xl w-full">
@@ -166,6 +288,11 @@ const Index = () => {
                 <div className={`text-8xl md:text-9xl font-black text-white transition-all ${isAnimating ? 'pulse-animation' : ''}`}>
                   {clicks.toLocaleString()}
                 </div>
+                {(multiplier > 1 || autoClicker > 0) && (
+                  <p className="text-white/70 text-sm font-medium">
+                    За клик: +{multiplier + autoClicker} тапов
+                  </p>
+                )}
               </div>
 
               <div className="relative">
@@ -194,7 +321,7 @@ const Index = () => {
                       '--ty': `${particle.ty}px`,
                     }}
                   >
-                    +1
+                    +{multiplier + autoClicker}
                   </div>
                 ))}
               </div>
