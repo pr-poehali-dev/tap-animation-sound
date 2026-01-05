@@ -40,6 +40,7 @@ interface Skin {
   gradient: string;
   emoji: string;
   price: number;
+  requiredRebirth: number;
 }
 
 const Index = () => {
@@ -51,6 +52,7 @@ const Index = () => {
   
   const [clicks, setClicks] = useState(0);
   const [tokens, setTokens] = useState(0);
+  const [rebirthLevel, setRebirthLevel] = useState(0);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -60,8 +62,11 @@ const Index = () => {
   const [megaBoost, setMegaBoost] = useState(0);
   const [ultraPower, setUltraPower] = useState(0);
   const [godMode, setGodMode] = useState(0);
+  const [cosmicPower, setCosmicPower] = useState(0);
+  const [infinityMode, setInfinityMode] = useState(0);
   const [showShop, setShowShop] = useState(false);
-  const [shopTab, setShopTab] = useState<'upgrades' | 'skins'>('upgrades');
+  const [showExchange, setShowExchange] = useState(false);
+  const [shopTab, setShopTab] = useState<'upgrades' | 'skins' | 'rebirth'>('upgrades');
   const [showPromo, setShowPromo] = useState(false);
   const [promoInput, setPromoInput] = useState('');
   const [usedPromos, setUsedPromos] = useState<string[]>([]);
@@ -79,14 +84,19 @@ const Index = () => {
   ];
 
   const skins: Skin[] = [
-    { id: 'default', name: 'Классик', gradient: 'from-red-500 via-orange-500 to-yellow-400', emoji: '🔥', price: 0 },
-    { id: 'ocean', name: 'Океан', gradient: 'from-blue-500 via-cyan-500 to-teal-400', emoji: '🌊', price: 100 },
-    { id: 'purple', name: 'Космос', gradient: 'from-purple-600 via-pink-500 to-rose-400', emoji: '🚀', price: 150 },
-    { id: 'green', name: 'Джунгли', gradient: 'from-green-600 via-emerald-500 to-lime-400', emoji: '🌿', price: 200 },
-    { id: 'gold', name: 'Золото', gradient: 'from-yellow-600 via-yellow-500 to-amber-400', emoji: '👑', price: 300 },
-    { id: 'dark', name: 'Тень', gradient: 'from-gray-800 via-gray-700 to-gray-600', emoji: '🌑', price: 250 },
-    { id: 'rainbow', name: 'Радуга', gradient: 'from-red-500 via-purple-500 to-blue-500', emoji: '🌈', price: 500 },
+    { id: 'default', name: 'Классик', gradient: 'from-red-500 via-orange-500 to-yellow-400', emoji: '🔥', price: 0, requiredRebirth: 0 },
+    { id: 'ocean', name: 'Океан', gradient: 'from-blue-500 via-cyan-500 to-teal-400', emoji: '🌊', price: 100, requiredRebirth: 0 },
+    { id: 'purple', name: 'Космос', gradient: 'from-purple-600 via-pink-500 to-rose-400', emoji: '🚀', price: 150, requiredRebirth: 1 },
+    { id: 'green', name: 'Джунгли', gradient: 'from-green-600 via-emerald-500 to-lime-400', emoji: '🌿', price: 200, requiredRebirth: 2 },
+    { id: 'gold', name: 'Золото', gradient: 'from-yellow-600 via-yellow-500 to-amber-400', emoji: '👑', price: 300, requiredRebirth: 3 },
+    { id: 'dark', name: 'Тень', gradient: 'from-gray-800 via-gray-700 to-gray-600', emoji: '🌑', price: 250, requiredRebirth: 2 },
+    { id: 'rainbow', name: 'Радуга', gradient: 'from-red-500 via-purple-500 to-blue-500', emoji: '🌈', price: 500, requiredRebirth: 5 },
+    { id: 'diamond', name: 'Алмаз', gradient: 'from-cyan-400 via-blue-300 to-indigo-400', emoji: '💎', price: 750, requiredRebirth: 7 },
+    { id: 'fire', name: 'Инферно', gradient: 'from-orange-600 via-red-600 to-pink-600', emoji: '🔥', price: 1000, requiredRebirth: 9 },
   ];
+
+  const getRebirthMultiplier = () => Math.pow(2, rebirthLevel);
+  const getRebirthCost = () => Math.pow(10, 6 + rebirthLevel);
 
   useEffect(() => {
     const savedAuth = localStorage.getItem('anarchyclick-auth');
@@ -106,12 +116,15 @@ const Index = () => {
       const data = JSON.parse(savedData);
       setClicks(data.clicks || 0);
       setTokens(data.tokens || 0);
+      setRebirthLevel(data.rebirthLevel || 0);
       setMultiplier(data.multiplier || 1);
       setAutoClicker(data.autoClicker || 0);
       setClickPower(data.clickPower || 0);
       setMegaBoost(data.megaBoost || 0);
       setUltraPower(data.ultraPower || 0);
       setGodMode(data.godMode || 0);
+      setCosmicPower(data.cosmicPower || 0);
+      setInfinityMode(data.infinityMode || 0);
       setUsedPromos(data.usedPromos || []);
       setCurrentSkin(data.currentSkin || 'default');
       setOwnedSkins(data.ownedSkins || ['default']);
@@ -124,18 +137,21 @@ const Index = () => {
     const saveData = {
       clicks,
       tokens,
+      rebirthLevel,
       multiplier,
       autoClicker,
       clickPower,
       megaBoost,
       ultraPower,
       godMode,
+      cosmicPower,
+      infinityMode,
       usedPromos,
       currentSkin,
       ownedSkins,
     };
     localStorage.setItem(`anarchyclick-data-${username}`, JSON.stringify(saveData));
-  }, [clicks, tokens, multiplier, autoClicker, clickPower, megaBoost, ultraPower, godMode, usedPromos, currentSkin, ownedSkins, username, isAuthenticated]);
+  }, [clicks, tokens, rebirthLevel, multiplier, autoClicker, clickPower, megaBoost, ultraPower, godMode, cosmicPower, infinityMode, usedPromos, currentSkin, ownedSkins, username, isAuthenticated]);
 
   useEffect(() => {
     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -204,9 +220,9 @@ const Index = () => {
     if (!isAuthenticated) return;
     
     const tokenInterval = setInterval(() => {
-      const totalPower = multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode;
+      const totalPower = multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode + cosmicPower + infinityMode;
       if (totalPower > 10) {
-        const tokenGain = Math.floor(totalPower / 100);
+        const tokenGain = Math.floor(totalPower / 100) * getRebirthMultiplier();
         if (tokenGain > 0) {
           setTokens(prev => prev + tokenGain);
         }
@@ -214,7 +230,7 @@ const Index = () => {
     }, 30000);
 
     return () => clearInterval(tokenInterval);
-  }, [multiplier, autoClicker, clickPower, megaBoost, ultraPower, godMode, isAuthenticated]);
+  }, [multiplier, autoClicker, clickPower, megaBoost, ultraPower, godMode, cosmicPower, infinityMode, rebirthLevel, isAuthenticated]);
 
   const handleLogin = () => {
     if (!inputUsername.trim() || !inputPassword.trim()) {
@@ -294,7 +310,7 @@ const Index = () => {
   };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const clickValue = multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode;
+    const clickValue = (multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode + cosmicPower + infinityMode) * getRebirthMultiplier();
     const newClicks = clicks + clickValue;
     setClicks(newClicks);
     setIsAnimating(true);
@@ -322,16 +338,74 @@ const Index = () => {
       return;
     }
 
-    setClicks(prev => prev + promo.reward);
-    setTokens(prev => prev + promo.tokenReward);
+    const rewardMultiplier = getRebirthMultiplier();
+    setClicks(prev => prev + promo.reward * rewardMultiplier);
+    setTokens(prev => prev + promo.tokenReward * rewardMultiplier);
     setUsedPromos(prev => [...prev, promo.code]);
-    toast.success(`Промокод активирован! +${promo.reward} тапов и +${promo.tokenReward} токенов! 🎉`, { duration: 4000 });
+    toast.success(`Промокод активирован! +${(promo.reward * rewardMultiplier).toLocaleString()} тапов и +${(promo.tokenReward * rewardMultiplier).toLocaleString()} токенов! 🎉`, { duration: 4000 });
     playBonusSound();
     setPromoInput('');
     setShowPromo(false);
   };
 
+  const exchangeClicksToTokens = () => {
+    const rate = 1000;
+    if (clicks >= rate) {
+      const tokensToGain = Math.floor(clicks / rate);
+      setClicks(prev => prev % rate);
+      setTokens(prev => prev + tokensToGain);
+      toast.success(`Обменяно! +${tokensToGain} токенов 💎`);
+      playBonusSound();
+    } else {
+      toast.error(`Нужно минимум ${rate} тапов для обмена!`);
+    }
+  };
+
+  const exchangeTokensToClicks = () => {
+    const rate = 1;
+    if (tokens >= rate) {
+      const clicksToGain = tokens * 1000;
+      setTokens(0);
+      setClicks(prev => prev + clicksToGain);
+      toast.success(`Обменяно! +${clicksToGain.toLocaleString()} тапов 💰`);
+      playBonusSound();
+    } else {
+      toast.error('Недостаточно токенов!');
+    }
+  };
+
+  const performRebirth = () => {
+    if (rebirthLevel >= 10) {
+      toast.error('Достигнут максимальный уровень перерождения!');
+      return;
+    }
+
+    const cost = getRebirthCost();
+    if (clicks >= cost) {
+      setClicks(0);
+      setMultiplier(1);
+      setAutoClicker(0);
+      setClickPower(0);
+      setMegaBoost(0);
+      setUltraPower(0);
+      setGodMode(0);
+      setCosmicPower(0);
+      setInfinityMode(0);
+      setRebirthLevel(prev => prev + 1);
+      toast.success(`🌟 Перерождение ${rebirthLevel + 1}! Множитель x${getRebirthMultiplier() * 2}`, { duration: 5000 });
+      playBonusSound();
+      setShowShop(false);
+    } else {
+      toast.error(`Нужно ${cost.toLocaleString()} тапов!`);
+    }
+  };
+
   const buySkin = (skin: Skin) => {
+    if (skin.requiredRebirth > rebirthLevel) {
+      toast.error(`Требуется перерождение уровня ${skin.requiredRebirth}!`);
+      return;
+    }
+
     if (ownedSkins.includes(skin.id)) {
       setCurrentSkin(skin.id);
       toast.success(`Скин "${skin.name}" активирован!`);
@@ -349,70 +423,73 @@ const Index = () => {
     }
   };
 
-  const buyMultiplier = () => {
-    if (clicks >= 500) {
-      setClicks(prev => prev - 500);
-      setMultiplier(prev => prev * 2);
-      toast.success('Умножитель x' + (multiplier * 2), { duration: 3000 });
-      playBonusSound();
-    } else {
-      toast.error('Недостаточно тапов! Нужно: 500');
+  const buyUpgrade = (name: string, price: number, requiredRebirth: number, action: () => void) => {
+    if (requiredRebirth > rebirthLevel) {
+      toast.error(`Требуется перерождение уровня ${requiredRebirth}!`);
+      return;
     }
+
+    if (clicks >= price) {
+      action();
+    } else {
+      toast.error(`Недостаточно тапов! Нужно: ${price}`);
+    }
+  };
+
+  const buyMultiplier = () => {
+    setClicks(prev => prev - 500);
+    setMultiplier(prev => prev * 2);
+    toast.success('Умножитель x' + (multiplier * 2), { duration: 3000 });
+    playBonusSound();
   };
 
   const buyAutoClicker = () => {
-    if (clicks >= 1500) {
-      setClicks(prev => prev - 1500);
-      setAutoClicker(50);
-      toast.success('Уничтожитель +50 💥', { duration: 3000 });
-      playBonusSound();
-    } else {
-      toast.error('Недостаточно тапов! Нужно: 1500');
-    }
+    setClicks(prev => prev - 1500);
+    setAutoClicker(50);
+    toast.success('Уничтожитель +50 💥', { duration: 3000 });
+    playBonusSound();
   };
 
   const buyClickPower = () => {
-    if (clicks >= 800) {
-      setClicks(prev => prev - 800);
-      setClickPower(prev => prev + 10);
-      toast.success('Сила клика +10 ⚡', { duration: 3000 });
-      playBonusSound();
-    } else {
-      toast.error('Недостаточно тапов! Нужно: 800');
-    }
+    setClicks(prev => prev - 800);
+    setClickPower(prev => prev + 10);
+    toast.success('Сила клика +10 ⚡', { duration: 3000 });
+    playBonusSound();
   };
 
   const buyMegaBoost = () => {
-    if (clicks >= 3000) {
-      setClicks(prev => prev - 3000);
-      setMegaBoost(prev => prev + 100);
-      toast.success('МЕГА-БУСТ +100! 🚀', { duration: 3000 });
-      playBonusSound();
-    } else {
-      toast.error('Недостаточно тапов! Нужно: 3000');
-    }
+    setClicks(prev => prev - 3000);
+    setMegaBoost(prev => prev + 100);
+    toast.success('МЕГА-БУСТ +100! 🚀', { duration: 3000 });
+    playBonusSound();
   };
 
   const buyUltraPower = () => {
-    if (clicks >= 5000) {
-      setClicks(prev => prev - 5000);
-      setUltraPower(prev => prev + 250);
-      toast.success('УЛЬТРА МОЩЬ +250! ⚡⚡', { duration: 3000 });
-      playBonusSound();
-    } else {
-      toast.error('Недостаточно тапов! Нужно: 5000');
-    }
+    setClicks(prev => prev - 5000);
+    setUltraPower(prev => prev + 250);
+    toast.success('УЛЬТРА МОЩЬ +250! ⚡⚡', { duration: 3000 });
+    playBonusSound();
   };
 
   const buyGodMode = () => {
-    if (clicks >= 10000) {
-      setClicks(prev => prev - 10000);
-      setGodMode(prev => prev + 500);
-      toast.success('БОГ РЕЖИМ +500! 👑', { duration: 3000 });
-      playBonusSound();
-    } else {
-      toast.error('Недостаточно тапов! Нужно: 10000');
-    }
+    setClicks(prev => prev - 10000);
+    setGodMode(prev => prev + 500);
+    toast.success('БОГ РЕЖИМ +500! 👑', { duration: 3000 });
+    playBonusSound();
+  };
+
+  const buyCosmicPower = () => {
+    setClicks(prev => prev - 25000);
+    setCosmicPower(prev => prev + 1000);
+    toast.success('КОСМИЧЕСКАЯ МОЩЬ +1000! 🌌', { duration: 3000 });
+    playBonusSound();
+  };
+
+  const buyInfinityMode = () => {
+    setClicks(prev => prev - 50000);
+    setInfinityMode(prev => prev + 2500);
+    toast.success('БЕСКОНЕЧНОСТЬ +2500! ♾️', { duration: 3000 });
+    playBonusSound();
   };
 
   if (!isAuthenticated) {
@@ -484,7 +561,7 @@ const Index = () => {
     );
   }
 
-  const totalPower = multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode;
+  const totalPower = (multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode + cosmicPower + infinityMode) * getRebirthMultiplier();
   const activeSkin = skins.find(s => s.id === currentSkin) || skins[0];
 
   return (
@@ -511,16 +588,32 @@ const Index = () => {
           AnarchyClick
         </h2>
         <p className="text-white/80 text-sm mt-1">Игрок: {username}</p>
+        {rebirthLevel > 0 && (
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-yellow-300 text-sm font-bold">🌟 Перерождение {rebirthLevel}</span>
+            <span className="text-white/60 text-xs">(x{getRebirthMultiplier()})</span>
+          </div>
+        )}
       </div>
 
       <div className="fixed top-4 right-4 z-20 flex gap-2">
+        <button
+          onClick={() => setShowExchange(!showExchange)}
+          className="bg-blue-500/80 hover:bg-blue-600/80 backdrop-blur-md border-2 border-white/40 rounded-xl px-4 py-2 transition-all hover:scale-105 active:scale-95 shadow-xl"
+        >
+          <div className="flex items-center gap-2">
+            <Icon name="ArrowLeftRight" size={20} className="text-white" />
+            <span className="text-white font-bold text-sm hidden md:inline">ОБМЕН</span>
+          </div>
+        </button>
+
         <button
           onClick={() => setShowPromo(!showPromo)}
           className="bg-green-500/80 hover:bg-green-600/80 backdrop-blur-md border-2 border-white/40 rounded-xl px-4 py-2 transition-all hover:scale-105 active:scale-95 shadow-xl"
         >
           <div className="flex items-center gap-2">
             <Icon name="Gift" size={20} className="text-white" />
-            <span className="text-white font-bold text-sm">ПРОМО</span>
+            <span className="text-white font-bold text-sm hidden md:inline">ПРОМО</span>
           </div>
         </button>
 
@@ -530,10 +623,73 @@ const Index = () => {
         >
           <div className="flex items-center gap-2">
             <Icon name="Store" size={20} className="text-white" />
-            <span className="text-white font-bold text-sm">МАГАЗИН</span>
+            <span className="text-white font-bold text-sm hidden md:inline">МАГАЗИН</span>
           </div>
         </button>
       </div>
+
+      {showExchange && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 flex items-center justify-center p-4" onClick={() => setShowExchange(false)}>
+          <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                  <Icon name="ArrowLeftRight" size={28} className="text-blue-400" />
+                  Обменник
+                </h2>
+                <button onClick={() => setShowExchange(false)} className="text-white/70 hover:text-white">
+                  <Icon name="X" size={24} />
+                </button>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4 border border-white/20">
+                <div className="text-center mb-3">
+                  <p className="text-white/70 text-sm">Тапы → Токены</p>
+                  <p className="text-white text-xs mt-1">Курс: 1000 тапов = 1 токен</p>
+                </div>
+                <Button
+                  onClick={exchangeClicksToTokens}
+                  disabled={clicks < 1000}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold"
+                >
+                  Обменять все тапы
+                </Button>
+                <p className="text-white/60 text-xs text-center mt-2">
+                  Получишь: ~{Math.floor(clicks / 1000)} токенов
+                </p>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4 border border-white/20">
+                <div className="text-center mb-3">
+                  <p className="text-white/70 text-sm">Токены → Тапы</p>
+                  <p className="text-white text-xs mt-1">Курс: 1 токен = 1000 тапов</p>
+                </div>
+                <Button
+                  onClick={exchangeTokensToClicks}
+                  disabled={tokens < 1}
+                  className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold"
+                >
+                  Обменять все токены
+                </Button>
+                <p className="text-white/60 text-xs text-center mt-2">
+                  Получишь: {(tokens * 1000).toLocaleString()} тапов
+                </p>
+              </div>
+
+              <div className="bg-white/10 rounded-lg p-3 border border-white/20 grid grid-cols-2 gap-2">
+                <div className="text-center">
+                  <p className="text-white/60 text-xs">У тебя</p>
+                  <p className="text-white font-bold">💰 {clicks.toLocaleString()}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-white/60 text-xs">У тебя</p>
+                  <p className="text-white font-bold">💎 {tokens.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {showPromo && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 flex items-center justify-center p-4" onClick={() => setShowPromo(false)}>
@@ -568,6 +724,11 @@ const Index = () => {
                 <p className="text-white/70 text-xs">
                   Использовано промокодов: {usedPromos.length}
                 </p>
+                {rebirthLevel > 0 && (
+                  <p className="text-yellow-300 text-xs mt-1">
+                    🌟 Награды увеличены в {getRebirthMultiplier()}x!
+                  </p>
+                )}
               </div>
             </div>
           </Card>
@@ -591,7 +752,7 @@ const Index = () => {
               <div className="flex gap-2 bg-white/5 rounded-lg p-1">
                 <button
                   onClick={() => setShopTab('upgrades')}
-                  className={`flex-1 py-2 px-3 rounded-md font-bold text-sm transition-all ${
+                  className={`flex-1 py-2 px-2 rounded-md font-bold text-xs transition-all ${
                     shopTab === 'upgrades' ? 'bg-accent text-white' : 'text-white/60 hover:text-white'
                   }`}
                 >
@@ -599,89 +760,167 @@ const Index = () => {
                 </button>
                 <button
                   onClick={() => setShopTab('skins')}
-                  className={`flex-1 py-2 px-3 rounded-md font-bold text-sm transition-all ${
+                  className={`flex-1 py-2 px-2 rounded-md font-bold text-xs transition-all ${
                     shopTab === 'skins' ? 'bg-accent text-white' : 'text-white/60 hover:text-white'
                   }`}
                 >
                   Скины
+                </button>
+                <button
+                  onClick={() => setShopTab('rebirth')}
+                  className={`flex-1 py-2 px-2 rounded-md font-bold text-xs transition-all ${
+                    shopTab === 'rebirth' ? 'bg-yellow-500 text-white' : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  🌟 Rebirth
                 </button>
               </div>
 
               {shopTab === 'upgrades' && (
                 <div className="space-y-2">
                   {[
-                    { name: 'Умножитель', icon: 'Zap', color: 'text-accent', value: multiplier, price: 500, onClick: buyMultiplier, desc: 'Удваивает клик' },
-                    { name: 'Уничтожитель', icon: 'Rocket', color: 'text-secondary', value: autoClicker, price: 1500, onClick: buyAutoClicker, desc: '+50 за клик', single: true },
-                    { name: 'Сила клика', icon: 'Zap', color: 'text-yellow-400', value: clickPower, price: 800, onClick: buyClickPower, desc: '+10 за клик' },
-                    { name: 'МЕГА-БУСТ', icon: 'Sparkles', color: 'text-pink-400', value: megaBoost, price: 3000, onClick: buyMegaBoost, desc: '+100 за клик' },
-                    { name: 'УЛЬТРА МОЩЬ', icon: 'Flame', color: 'text-orange-400', value: ultraPower, price: 5000, onClick: buyUltraPower, desc: '+250 за клик' },
-                    { name: 'БОГ РЕЖИМ', icon: 'Crown', color: 'text-yellow-300', value: godMode, price: 10000, onClick: buyGodMode, desc: '+500 за клик' },
-                  ].map((item, i) => (
-                    <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/20">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-sm font-bold text-white flex items-center gap-1">
-                            <Icon name={item.icon as any} size={16} className={item.color} />
-                            {item.name}
-                          </h3>
-                          <p className="text-white/60 text-xs">{item.desc}</p>
-                          <p className="text-white/80 text-xs mt-1">
-                            {item.single ? (item.value > 0 ? '✅' : '❌') : `+${item.value}`}
-                          </p>
+                    { name: 'Умножитель', icon: 'Zap', color: 'text-accent', value: multiplier, price: 500, onClick: buyMultiplier, desc: 'Удваивает клик', requiredRebirth: 0 },
+                    { name: 'Уничтожитель', icon: 'Rocket', color: 'text-secondary', value: autoClicker, price: 1500, onClick: buyAutoClicker, desc: '+50 за клик', single: true, requiredRebirth: 0 },
+                    { name: 'Сила клика', icon: 'Zap', color: 'text-yellow-400', value: clickPower, price: 800, onClick: buyClickPower, desc: '+10 за клик', requiredRebirth: 0 },
+                    { name: 'МЕГА-БУСТ', icon: 'Sparkles', color: 'text-pink-400', value: megaBoost, price: 3000, onClick: buyMegaBoost, desc: '+100 за клик', requiredRebirth: 1 },
+                    { name: 'УЛЬТРА МОЩЬ', icon: 'Flame', color: 'text-orange-400', value: ultraPower, price: 5000, onClick: buyUltraPower, desc: '+250 за клик', requiredRebirth: 2 },
+                    { name: 'БОГ РЕЖИМ', icon: 'Crown', color: 'text-yellow-300', value: godMode, price: 10000, onClick: buyGodMode, desc: '+500 за клик', requiredRebirth: 4 },
+                    { name: 'КОСМОС', icon: 'Orbit', color: 'text-purple-400', value: cosmicPower, price: 25000, onClick: buyCosmicPower, desc: '+1000 за клик', requiredRebirth: 6 },
+                    { name: 'БЕСКОНЕЧНОСТЬ', icon: 'Infinity', color: 'text-cyan-400', value: infinityMode, price: 50000, onClick: buyInfinityMode, desc: '+2500 за клик', requiredRebirth: 8 },
+                  ].map((item, i) => {
+                    const isLocked = item.requiredRebirth > rebirthLevel;
+                    return (
+                      <div key={i} className={`bg-white/5 rounded-lg p-3 border ${isLocked ? 'border-red-500/30' : 'border-white/20'}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-1">
+                              <Icon name={item.icon as any} size={16} className={item.color} />
+                              {item.name}
+                              {isLocked && <span className="text-red-400 text-xs ml-1">🔒{item.requiredRebirth}</span>}
+                            </h3>
+                            <p className="text-white/60 text-xs">{item.desc}</p>
+                            <p className="text-white/80 text-xs mt-1">
+                              {item.single ? (item.value > 0 ? '✅' : '❌') : `+${item.value}`}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => buyUpgrade(item.name, item.price, item.requiredRebirth, item.onClick)}
+                            disabled={clicks < item.price || (item.single && item.value > 0) || isLocked}
+                            size="sm"
+                            className="bg-accent hover:bg-accent/90 text-xs px-3"
+                          >
+                            {item.price}
+                          </Button>
                         </div>
-                        <Button
-                          onClick={item.onClick}
-                          disabled={clicks < item.price || (item.single && item.value > 0)}
-                          size="sm"
-                          className="bg-accent hover:bg-accent/90 text-xs px-3"
-                        >
-                          {item.price}
-                        </Button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
               {shopTab === 'skins' && (
                 <div className="space-y-2">
-                  {skins.map((skin) => (
-                    <div key={skin.id} className="bg-white/5 rounded-lg p-3 border border-white/20">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${skin.gradient} flex items-center justify-center text-2xl shadow-lg flex-shrink-0`}>
-                          {skin.emoji}
+                  {skins.map((skin) => {
+                    const isLocked = skin.requiredRebirth > rebirthLevel;
+                    return (
+                      <div key={skin.id} className={`bg-white/5 rounded-lg p-3 border ${isLocked ? 'border-red-500/30' : 'border-white/20'}`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${skin.gradient} flex items-center justify-center text-2xl shadow-lg flex-shrink-0 ${isLocked ? 'opacity-50' : ''}`}>
+                            {isLocked ? '🔒' : skin.emoji}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-1">
+                              {skin.name}
+                              {isLocked && <span className="text-red-400 text-xs">🔒{skin.requiredRebirth}</span>}
+                            </h3>
+                            <p className="text-white/60 text-xs">
+                              {isLocked ? `Требуется ${skin.requiredRebirth} rebirth` :
+                                ownedSkins.includes(skin.id) ? (
+                                currentSkin === skin.id ? '✅ Активен' : '✓ Куплен'
+                              ) : (
+                                `${skin.price} токенов`
+                              )}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => buySkin(skin)}
+                            disabled={(!ownedSkins.includes(skin.id) && tokens < skin.price) || isLocked}
+                            size="sm"
+                            className={`text-xs px-3 ${
+                              currentSkin === skin.id
+                                ? 'bg-green-500 hover:bg-green-600'
+                                : ownedSkins.includes(skin.id)
+                                ? 'bg-blue-500 hover:bg-blue-600'
+                                : 'bg-accent hover:bg-accent/90'
+                            }`}
+                          >
+                            {isLocked ? '🔒' : currentSkin === skin.id ? 'Выбран' : ownedSkins.includes(skin.id) ? 'Выбрать' : skin.price === 0 ? 'Базовый' : 'Купить'}
+                          </Button>
                         </div>
-                        <div className="flex-1">
-                          <h3 className="text-sm font-bold text-white">{skin.name}</h3>
-                          <p className="text-white/60 text-xs">
-                            {ownedSkins.includes(skin.id) ? (
-                              currentSkin === skin.id ? '✅ Активен' : '✓ Куплен'
-                            ) : (
-                              `${skin.price} токенов`
-                            )}
-                          </p>
-                        </div>
-                        <Button
-                          onClick={() => buySkin(skin)}
-                          disabled={!ownedSkins.includes(skin.id) && tokens < skin.price}
-                          size="sm"
-                          className={`text-xs px-3 ${
-                            currentSkin === skin.id
-                              ? 'bg-green-500 hover:bg-green-600'
-                              : ownedSkins.includes(skin.id)
-                              ? 'bg-blue-500 hover:bg-blue-600'
-                              : 'bg-accent hover:bg-accent/90'
-                          }`}
-                        >
-                          {currentSkin === skin.id ? 'Выбран' : ownedSkins.includes(skin.id) ? 'Выбрать' : skin.price === 0 ? 'Базовый' : 'Купить'}
-                        </Button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div className="bg-white/5 rounded-lg p-3 border border-white/20 text-center">
                     <p className="text-white/70 text-xs">
                       💎 Токены зарабатываются автоматически при высокой мощности (каждые 30 сек) и из промокодов
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {shopTab === 'rebirth' && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg p-4 border-2 border-yellow-500/40">
+                    <h3 className="text-2xl font-black text-yellow-300 text-center mb-2">
+                      🌟 ПЕРЕРОЖДЕНИЕ 🌟
+                    </h3>
+                    <p className="text-white/80 text-sm text-center mb-3">
+                      Сбрось прогресс, чтобы получить мощный множитель!
+                    </p>
+                    
+                    <div className="bg-white/10 rounded-lg p-3 mb-3 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/70">Текущий уровень:</span>
+                        <span className="text-white font-bold">{rebirthLevel} / 10</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/70">Текущий множитель:</span>
+                        <span className="text-yellow-300 font-bold">x{getRebirthMultiplier()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/70">После rebirth:</span>
+                        <span className="text-green-300 font-bold">x{getRebirthMultiplier() * 2}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-red-500/20 rounded-lg p-3 mb-3 border border-red-500/40">
+                      <p className="text-red-300 text-xs font-bold mb-2">⚠️ ЧТО СБРОСИТСЯ:</p>
+                      <ul className="text-white/70 text-xs space-y-1">
+                        <li>• Все тапы (станет 0)</li>
+                        <li>• Все улучшения (станут базовыми)</li>
+                        <li>• Токены остаются</li>
+                        <li>• Скины остаются</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-green-500/20 rounded-lg p-3 mb-3 border border-green-500/40">
+                      <p className="text-green-300 text-xs font-bold mb-2">✅ ЧТО ПОЛУЧИШЬ:</p>
+                      <ul className="text-white/70 text-xs space-y-1">
+                        <li>• Множитель x{getRebirthMultiplier() * 2} ко всем кликам</li>
+                        <li>• x{getRebirthMultiplier() * 2} к заработку токенов</li>
+                        <li>• x{getRebirthMultiplier() * 2} к промокодам</li>
+                        <li>• Новые улучшения</li>
+                        <li>• Новые скины</li>
+                      </ul>
+                    </div>
+
+                    <Button
+                      onClick={performRebirth}
+                      disabled={clicks < getRebirthCost() || rebirthLevel >= 10}
+                      className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-black text-lg py-4"
+                    >
+                      {rebirthLevel >= 10 ? 'МАКСИМАЛЬНЫЙ УРОВЕНЬ' : `ПЕРЕРОДИТЬСЯ (${getRebirthCost().toLocaleString()} тапов)`}
+                    </Button>
                   </div>
                 </div>
               )}
@@ -726,13 +965,18 @@ const Index = () => {
                 </div>
                 {totalPower > 1 && (
                   <p className="text-white/60 text-xs font-medium">
-                    За клик: +{totalPower}
+                    За клик: +{totalPower.toLocaleString()}
                   </p>
                 )}
                 <div className="flex items-center justify-center gap-3 mt-2">
                   <div className="bg-white/5 px-3 py-1 rounded-lg">
-                    <p className="text-white/80 text-xs font-bold">💎 {tokens}</p>
+                    <p className="text-white/80 text-xs font-bold">💎 {tokens.toLocaleString()}</p>
                   </div>
+                  {rebirthLevel > 0 && (
+                    <div className="bg-yellow-500/20 px-3 py-1 rounded-lg border border-yellow-500/40">
+                      <p className="text-yellow-300 text-xs font-bold">🌟 x{getRebirthMultiplier()}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -765,7 +1009,7 @@ const Index = () => {
                       '--ty': `${particle.ty}px`,
                     }}
                   >
-                    +{totalPower}
+                    +{totalPower.toLocaleString()}
                   </div>
                 ))}
               </div>
