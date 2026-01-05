@@ -32,6 +32,25 @@ const Index = () => {
   const bonusIdRef = useRef(0);
 
   useEffect(() => {
+    const savedData = localStorage.getItem('awtest-clicker');
+    if (savedData) {
+      const data = JSON.parse(savedData);
+      setClicks(data.clicks || 0);
+      setMultiplier(data.multiplier || 1);
+      setAutoClicker(data.autoClicker || 0);
+    }
+  }, []);
+
+  useEffect(() => {
+    const saveData = {
+      clicks,
+      multiplier,
+      autoClicker,
+    };
+    localStorage.setItem('awtest-clicker', JSON.stringify(saveData));
+  }, [clicks, multiplier, autoClicker]);
+
+  useEffect(() => {
     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     return () => {
       audioContextRef.current?.close();
@@ -182,11 +201,11 @@ const Index = () => {
 
       <button
         onClick={() => setShowShop(!showShop)}
-        className="fixed top-6 right-6 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-md border-2 border-white/40 rounded-2xl px-6 py-3 transition-all hover:scale-105 active:scale-95"
+        className="fixed top-6 right-6 z-20 bg-gradient-to-br from-accent to-secondary hover:from-accent/90 hover:to-secondary/90 backdrop-blur-md border-4 border-white/40 rounded-2xl px-8 py-4 transition-all hover:scale-110 active:scale-95 shadow-2xl"
       >
-        <div className="flex items-center gap-2">
-          <Icon name="ShoppingBag" size={24} className="text-white" />
-          <span className="text-white font-bold text-lg">МАГАЗИН</span>
+        <div className="flex items-center gap-3">
+          <Icon name="Store" size={32} className="text-white" />
+          <span className="text-white font-black text-2xl tracking-wide">МАГАЗИН</span>
         </div>
       </button>
 
@@ -271,9 +290,6 @@ const Index = () => {
       <div className="relative z-10 max-w-2xl w-full">
         <div className="text-center space-y-8">
           <div className="space-y-4">
-            <h1 className="text-6xl md:text-8xl font-black text-white drop-shadow-2xl tracking-tight">
-              КЛИКЕР
-            </h1>
             <p className="text-xl md:text-2xl text-white/90 font-medium">
               Нажимай и собирай очки! 🎮
             </p>
