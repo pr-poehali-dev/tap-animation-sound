@@ -30,7 +30,16 @@ interface Leader {
 interface PromoCode {
   code: string;
   reward: number;
+  tokenReward: number;
   used: boolean;
+}
+
+interface Skin {
+  id: string;
+  name: string;
+  gradient: string;
+  emoji: string;
+  price: number;
 }
 
 const Index = () => {
@@ -41,6 +50,7 @@ const Index = () => {
   const [inputPassword, setInputPassword] = useState('');
   
   const [clicks, setClicks] = useState(0);
+  const [tokens, setTokens] = useState(0);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -51,18 +61,31 @@ const Index = () => {
   const [ultraPower, setUltraPower] = useState(0);
   const [godMode, setGodMode] = useState(0);
   const [showShop, setShowShop] = useState(false);
+  const [shopTab, setShopTab] = useState<'upgrades' | 'skins'>('upgrades');
   const [showPromo, setShowPromo] = useState(false);
   const [promoInput, setPromoInput] = useState('');
   const [usedPromos, setUsedPromos] = useState<string[]>([]);
+  const [currentSkin, setCurrentSkin] = useState('default');
+  const [ownedSkins, setOwnedSkins] = useState<string[]>(['default']);
   const [leaderboard, setLeaderboard] = useState<Leader[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const particleIdRef = useRef(0);
   const snowflakeIdRef = useRef(0);
 
   const promoCodes: PromoCode[] = [
-    { code: 'dizzyt', reward: 5000, used: false },
-    { code: 'anarchy', reward: 10000, used: false },
-    { code: 'mega2024', reward: 15000, used: false },
+    { code: 'dizzyt', reward: 5000, tokenReward: 50, used: false },
+    { code: 'anarchy', reward: 10000, tokenReward: 100, used: false },
+    { code: 'mega2024', reward: 15000, tokenReward: 150, used: false },
+  ];
+
+  const skins: Skin[] = [
+    { id: 'default', name: 'Классик', gradient: 'from-red-500 via-orange-500 to-yellow-400', emoji: '🔥', price: 0 },
+    { id: 'ocean', name: 'Океан', gradient: 'from-blue-500 via-cyan-500 to-teal-400', emoji: '🌊', price: 100 },
+    { id: 'purple', name: 'Космос', gradient: 'from-purple-600 via-pink-500 to-rose-400', emoji: '🚀', price: 150 },
+    { id: 'green', name: 'Джунгли', gradient: 'from-green-600 via-emerald-500 to-lime-400', emoji: '🌿', price: 200 },
+    { id: 'gold', name: 'Золото', gradient: 'from-yellow-600 via-yellow-500 to-amber-400', emoji: '👑', price: 300 },
+    { id: 'dark', name: 'Тень', gradient: 'from-gray-800 via-gray-700 to-gray-600', emoji: '🌑', price: 250 },
+    { id: 'rainbow', name: 'Радуга', gradient: 'from-red-500 via-purple-500 to-blue-500', emoji: '🌈', price: 500 },
   ];
 
   useEffect(() => {
@@ -82,6 +105,7 @@ const Index = () => {
     if (savedData) {
       const data = JSON.parse(savedData);
       setClicks(data.clicks || 0);
+      setTokens(data.tokens || 0);
       setMultiplier(data.multiplier || 1);
       setAutoClicker(data.autoClicker || 0);
       setClickPower(data.clickPower || 0);
@@ -89,6 +113,8 @@ const Index = () => {
       setUltraPower(data.ultraPower || 0);
       setGodMode(data.godMode || 0);
       setUsedPromos(data.usedPromos || []);
+      setCurrentSkin(data.currentSkin || 'default');
+      setOwnedSkins(data.ownedSkins || ['default']);
     }
   }, [isAuthenticated, username]);
 
@@ -97,6 +123,7 @@ const Index = () => {
     
     const saveData = {
       clicks,
+      tokens,
       multiplier,
       autoClicker,
       clickPower,
@@ -104,9 +131,11 @@ const Index = () => {
       ultraPower,
       godMode,
       usedPromos,
+      currentSkin,
+      ownedSkins,
     };
     localStorage.setItem(`anarchyclick-data-${username}`, JSON.stringify(saveData));
-  }, [clicks, multiplier, autoClicker, clickPower, megaBoost, ultraPower, godMode, usedPromos, username, isAuthenticated]);
+  }, [clicks, tokens, multiplier, autoClicker, clickPower, megaBoost, ultraPower, godMode, usedPromos, currentSkin, ownedSkins, username, isAuthenticated]);
 
   useEffect(() => {
     audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -170,6 +199,22 @@ const Index = () => {
 
     return () => clearInterval(interval);
   }, [clicks, isAuthenticated, username]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const tokenInterval = setInterval(() => {
+      const totalPower = multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode;
+      if (totalPower > 10) {
+        const tokenGain = Math.floor(totalPower / 100);
+        if (tokenGain > 0) {
+          setTokens(prev => prev + tokenGain);
+        }
+      }
+    }, 30000);
+
+    return () => clearInterval(tokenInterval);
+  }, [multiplier, autoClicker, clickPower, megaBoost, ultraPower, godMode, isAuthenticated]);
 
   const handleLogin = () => {
     if (!inputUsername.trim() || !inputPassword.trim()) {
@@ -278,11 +323,30 @@ const Index = () => {
     }
 
     setClicks(prev => prev + promo.reward);
+    setTokens(prev => prev + promo.tokenReward);
     setUsedPromos(prev => [...prev, promo.code]);
-    toast.success(`Промокод активирован! +${promo.reward} тапов! 🎉`, { duration: 4000 });
+    toast.success(`Промокод активирован! +${promo.reward} тапов и +${promo.tokenReward} токенов! 🎉`, { duration: 4000 });
     playBonusSound();
     setPromoInput('');
     setShowPromo(false);
+  };
+
+  const buySkin = (skin: Skin) => {
+    if (ownedSkins.includes(skin.id)) {
+      setCurrentSkin(skin.id);
+      toast.success(`Скин "${skin.name}" активирован!`);
+      return;
+    }
+
+    if (tokens >= skin.price) {
+      setTokens(prev => prev - skin.price);
+      setOwnedSkins(prev => [...prev, skin.id]);
+      setCurrentSkin(skin.id);
+      toast.success(`Скин "${skin.name}" куплен и активирован! 🎨`, { duration: 3000 });
+      playBonusSound();
+    } else {
+      toast.error(`Недостаточно токенов! Нужно: ${skin.price}`);
+    }
   };
 
   const buyMultiplier = () => {
@@ -421,6 +485,7 @@ const Index = () => {
   }
 
   const totalPower = multiplier + autoClicker + clickPower + megaBoost + ultraPower + godMode;
+  const activeSkin = skins.find(s => s.id === currentSkin) || skins[0];
 
   return (
     <div className="min-h-screen game-gradient flex flex-col p-4 overflow-hidden relative">
@@ -513,7 +578,7 @@ const Index = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 flex items-center justify-center p-4" onClick={() => setShowShop(false)}>
           <Card className="bg-white/10 backdrop-blur-md border-white/20 shadow-2xl p-5 max-w-md w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-4">
-              <div className="flex items-center justify-between sticky top-0 bg-white/10 backdrop-blur-md py-2 -mt-2">
+              <div className="flex items-center justify-between sticky top-0 bg-white/10 backdrop-blur-md py-2 -mt-2 z-10">
                 <h2 className="text-2xl font-black text-white flex items-center gap-2">
                   <Icon name="Store" size={24} />
                   Магазин
@@ -523,44 +588,113 @@ const Index = () => {
                 </button>
               </div>
 
-              <div className="space-y-2">
-                {[
-                  { name: 'Умножитель', icon: 'Zap', color: 'text-accent', value: multiplier, price: 500, onClick: buyMultiplier, desc: 'Удваивает клик' },
-                  { name: 'Уничтожитель', icon: 'Rocket', color: 'text-secondary', value: autoClicker, price: 1500, onClick: buyAutoClicker, desc: '+50 за клик', single: true },
-                  { name: 'Сила клика', icon: 'Zap', color: 'text-yellow-400', value: clickPower, price: 800, onClick: buyClickPower, desc: '+10 за клик' },
-                  { name: 'МЕГА-БУСТ', icon: 'Sparkles', color: 'text-pink-400', value: megaBoost, price: 3000, onClick: buyMegaBoost, desc: '+100 за клик' },
-                  { name: 'УЛЬТРА МОЩЬ', icon: 'Flame', color: 'text-orange-400', value: ultraPower, price: 5000, onClick: buyUltraPower, desc: '+250 за клик' },
-                  { name: 'БОГ РЕЖИМ', icon: 'Crown', color: 'text-yellow-300', value: godMode, price: 10000, onClick: buyGodMode, desc: '+500 за клик' },
-                ].map((item, i) => (
-                  <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/20">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-bold text-white flex items-center gap-1">
-                          <Icon name={item.icon as any} size={16} className={item.color} />
-                          {item.name}
-                        </h3>
-                        <p className="text-white/60 text-xs">{item.desc}</p>
-                        <p className="text-white/80 text-xs mt-1">
-                          {item.single ? (item.value > 0 ? '✅' : '❌') : `+${item.value}`}
-                        </p>
-                      </div>
-                      <Button
-                        onClick={item.onClick}
-                        disabled={clicks < item.price || (item.single && item.value > 0)}
-                        size="sm"
-                        className="bg-accent hover:bg-accent/90 text-xs px-3"
-                      >
-                        {item.price}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex gap-2 bg-white/5 rounded-lg p-1">
+                <button
+                  onClick={() => setShopTab('upgrades')}
+                  className={`flex-1 py-2 px-3 rounded-md font-bold text-sm transition-all ${
+                    shopTab === 'upgrades' ? 'bg-accent text-white' : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  Улучшения
+                </button>
+                <button
+                  onClick={() => setShopTab('skins')}
+                  className={`flex-1 py-2 px-3 rounded-md font-bold text-sm transition-all ${
+                    shopTab === 'skins' ? 'bg-accent text-white' : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  Скины
+                </button>
               </div>
 
-              <div className="bg-white/10 rounded-lg p-3 border border-white/20">
-                <p className="text-white/80 text-center font-medium text-sm">
-                  💰 {clicks.toLocaleString()} тапов
-                </p>
+              {shopTab === 'upgrades' && (
+                <div className="space-y-2">
+                  {[
+                    { name: 'Умножитель', icon: 'Zap', color: 'text-accent', value: multiplier, price: 500, onClick: buyMultiplier, desc: 'Удваивает клик' },
+                    { name: 'Уничтожитель', icon: 'Rocket', color: 'text-secondary', value: autoClicker, price: 1500, onClick: buyAutoClicker, desc: '+50 за клик', single: true },
+                    { name: 'Сила клика', icon: 'Zap', color: 'text-yellow-400', value: clickPower, price: 800, onClick: buyClickPower, desc: '+10 за клик' },
+                    { name: 'МЕГА-БУСТ', icon: 'Sparkles', color: 'text-pink-400', value: megaBoost, price: 3000, onClick: buyMegaBoost, desc: '+100 за клик' },
+                    { name: 'УЛЬТРА МОЩЬ', icon: 'Flame', color: 'text-orange-400', value: ultraPower, price: 5000, onClick: buyUltraPower, desc: '+250 за клик' },
+                    { name: 'БОГ РЕЖИМ', icon: 'Crown', color: 'text-yellow-300', value: godMode, price: 10000, onClick: buyGodMode, desc: '+500 за клик' },
+                  ].map((item, i) => (
+                    <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-bold text-white flex items-center gap-1">
+                            <Icon name={item.icon as any} size={16} className={item.color} />
+                            {item.name}
+                          </h3>
+                          <p className="text-white/60 text-xs">{item.desc}</p>
+                          <p className="text-white/80 text-xs mt-1">
+                            {item.single ? (item.value > 0 ? '✅' : '❌') : `+${item.value}`}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={item.onClick}
+                          disabled={clicks < item.price || (item.single && item.value > 0)}
+                          size="sm"
+                          className="bg-accent hover:bg-accent/90 text-xs px-3"
+                        >
+                          {item.price}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {shopTab === 'skins' && (
+                <div className="space-y-2">
+                  {skins.map((skin) => (
+                    <div key={skin.id} className="bg-white/5 rounded-lg p-3 border border-white/20">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${skin.gradient} flex items-center justify-center text-2xl shadow-lg flex-shrink-0`}>
+                          {skin.emoji}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-sm font-bold text-white">{skin.name}</h3>
+                          <p className="text-white/60 text-xs">
+                            {ownedSkins.includes(skin.id) ? (
+                              currentSkin === skin.id ? '✅ Активен' : '✓ Куплен'
+                            ) : (
+                              `${skin.price} токенов`
+                            )}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => buySkin(skin)}
+                          disabled={!ownedSkins.includes(skin.id) && tokens < skin.price}
+                          size="sm"
+                          className={`text-xs px-3 ${
+                            currentSkin === skin.id
+                              ? 'bg-green-500 hover:bg-green-600'
+                              : ownedSkins.includes(skin.id)
+                              ? 'bg-blue-500 hover:bg-blue-600'
+                              : 'bg-accent hover:bg-accent/90'
+                          }`}
+                        >
+                          {currentSkin === skin.id ? 'Выбран' : ownedSkins.includes(skin.id) ? 'Выбрать' : skin.price === 0 ? 'Базовый' : 'Купить'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="bg-white/5 rounded-lg p-3 border border-white/20 text-center">
+                    <p className="text-white/70 text-xs">
+                      💎 Токены зарабатываются автоматически при высокой мощности (каждые 30 сек) и из промокодов
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white/10 rounded-lg p-3 border border-white/20 grid grid-cols-2 gap-2">
+                <div className="text-center">
+                  <p className="text-white/60 text-xs font-medium">Тапы</p>
+                  <p className="text-white font-bold text-lg">💰 {clicks.toLocaleString()}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-white/60 text-xs font-medium">Токены</p>
+                  <p className="text-white font-bold text-lg">💎 {tokens.toLocaleString()}</p>
+                </div>
               </div>
 
               <div className="bg-white/5 rounded-lg p-2 border border-white/20 text-center">
@@ -595,16 +729,26 @@ const Index = () => {
                     За клик: +{totalPower}
                   </p>
                 )}
+                <div className="flex items-center justify-center gap-3 mt-2">
+                  <div className="bg-white/5 px-3 py-1 rounded-lg">
+                    <p className="text-white/80 text-xs font-bold">💎 {tokens}</p>
+                  </div>
+                </div>
               </div>
 
               <div className="relative">
                 <Button
                   onClick={handleClick}
                   size="lg"
-                  className="w-full h-28 md:h-36 text-2xl md:text-3xl font-black bg-gradient-to-br from-red-500 via-orange-500 to-yellow-400 hover:from-red-600 hover:via-orange-600 hover:to-yellow-500 border-4 border-white/40 shadow-2xl transition-all hover:scale-105 active:scale-95 rounded-3xl relative overflow-hidden"
+                  className={`w-full h-28 md:h-36 text-2xl md:text-3xl font-black bg-gradient-to-br ${activeSkin.gradient} hover:brightness-110 border-4 border-white/40 shadow-2xl transition-all hover:scale-105 active:scale-95 rounded-3xl relative overflow-hidden`}
                 >
-                  <span className="relative z-10 flex items-center gap-3">
-                    🔥 TAP! 🔥
+                  <span className="relative z-10 flex flex-col items-center gap-1">
+                    <span className="flex items-center gap-2">
+                      {activeSkin.emoji} TAP! {activeSkin.emoji}
+                    </span>
+                    <span className="text-xs font-bold text-white/90 tracking-widest">
+                      ANARCHYWORLD
+                    </span>
                   </span>
                   <div className="absolute inset-0 bg-white/20 animate-pulse" />
                 </Button>
